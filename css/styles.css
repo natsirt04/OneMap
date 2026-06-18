@@ -78,12 +78,14 @@ body {
 input,
 select {
   width: 100%;
-  padding: 9px 10px;
+  padding: 11px 10px;
   border-radius: 8px;
   border: 1px solid var(--panel-2);
   background: #0b1220;
   color: var(--text);
-  font-size: 0.9rem;
+  /* 16px is the magic number: anything smaller makes iOS Safari auto-zoom
+     when the field is focused. Keep it at 16px so the page stays put. */
+  font-size: 16px;
 }
 
 input:focus,
@@ -175,21 +177,76 @@ main {
 /* Make Leaflet popups match the dark theme a little */
 .leaflet-popup-content {
   font-family: system-ui, sans-serif;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
-/* ----------------------------- Responsive ----------------------------- */
+/* Floating "☰ Menu" button — hidden on desktop, shown on phones. */
+#panelToggle {
+  display: none;
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 1001;
+  padding: 10px 14px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  font-size: 0.95rem;
+}
+
+/* ----------------------------- Responsive (phones) ----------------------------- */
 @media (max-width: 700px) {
-  body {
-    flex-direction: column;
-  }
-  #sidebar {
-    width: 100%;
-    flex: 0 0 auto;
-    height: auto;
-    max-height: 45vh;
-  }
+  /* The map fills the whole screen and sits behind everything. */
   main {
-    height: 55vh;
+    position: fixed;
+    inset: 0;
+    height: 100%;
+    height: 100dvh; /* dvh = dynamic viewport height: correct with mobile toolbars */
+  }
+
+  /* Show the floating toggle button. */
+  #panelToggle {
+    display: inline-block;
+  }
+
+  /* The sidebar becomes a bottom sheet that slides up over the map. */
+  #sidebar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-height: 78vh;
+    height: auto;
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.5);
+    transform: translateY(105%); /* hidden by default */
+    transition: transform 0.25s ease;
+    z-index: 1000;
+    /* respect the iPhone home-indicator safe area */
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+
+  /* When body has .panel-open (toggled by the button), slide the sheet in. */
+  body.panel-open #sidebar {
+    transform: translateY(0);
+  }
+
+  /* A little grab-handle hint at the top of the sheet. */
+  #sidebar::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--panel-2);
+    margin: 2px auto 8px;
+  }
+
+  /* Bigger, finger-friendly tap targets. */
+  button {
+    padding: 12px 16px;
+  }
+  .results li {
+    padding: 12px 10px;
   }
 }

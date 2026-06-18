@@ -1,0 +1,11 @@
+{
+  "name": "onemap-reference",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Interactive Singapore map on OneMap basemaps + APIs (pure HTML/CSS/JS).",
+  "scripts": {
+    "dev": "npx --yes serve . -l 5500",
+    "deploy": "npx --yes vercel --prod",
+    "deploy:preview": "npx --yes vercel"
+  }
+}

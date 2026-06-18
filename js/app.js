@@ -168,6 +168,9 @@ async function runSearch() {
         marker
           .setPopupContent(`<b>${r.SEARCHVAL}</b><br>${r.ADDRESS || ""}`)
           .openPopup();
+        // Remember this as the routing destination. If we already know the
+        // user's location, draw a route to it straight away (see section 9).
+        selectDestination(lat, lng, r.SEARCHVAL);
       });
       searchResults.appendChild(li);
     });
@@ -319,11 +322,194 @@ basemapSelect.addEventListener("change", () => {
 });
 
 /* -------------------------------------------------------------------------
-   8. Friendly startup message in the console
+   9. Phone GPS + Routing
+   -------------------------------------------------------------------------
+   "Linking to your phone" is done by the BROWSER's Geolocation API — a W3C
+   standard, not a OneMap feature. It reads the device's GPS/Wi-Fi position:
+     MDN: https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API
+   IMPORTANT: browsers only allow geolocation in a "secure context" — i.e.
+   HTTPS, or http://localhost. Over plain http on a LAN IP it will be blocked.
+
+   We then feed that position to OneMap's Routing API to draw directions:
+     Docs: https://www.onemap.gov.sg/apidocs/routing
+     GET /public/routingsvc/route?start=lat,lng&end=lat,lng&routeType=walk
+     (token goes in the Authorization header). The response includes:
+       - route_summary.total_time     (seconds)
+       - route_summary.total_distance (metres)
+       - route_geometry               (an ENCODED POLYLINE, precision 5)
+   ------------------------------------------------------------------------- */
+
+const locateBtn = document.getElementById("locateBtn");
+const locateStatus = document.getElementById("locateStatus");
+const routeTypeSelect = document.getElementById("routeTypeSelect");
+
+let userLocation = null;   // {lat, lng} once we have the phone's GPS
+let userMarker = null;     // blue "you are here" marker
+let accuracyCircle = null; // shows GPS accuracy radius
+let destination = null;    // {lat, lng, label} chosen from search
+let routeLayer = null;     // the drawn route polyline
+
+// Decode a Google/OneMap "encoded polyline" (precision 5) into [lat,lng] pairs.
+// Standard algorithm — see https://developers.google.com/maps/documentation/utilities/polylinealgorithm
+function decodePolyline(encoded) {
+  const points = [];
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+  while (index < encoded.length) {
+    let result = 0;
+    let shift = 0;
+    let b;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    lat += result & 1 ? ~(result >> 1) : result >> 1;
+
+    result = 0;
+    shift = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    lng += result & 1 ? ~(result >> 1) : result >> 1;
+
+    points.push([lat / 1e5, lng / 1e5]);
+  }
+  return points;
+}
+
+// Ask the phone for its current position.
+function locateMe() {
+  if (!("geolocation" in navigator)) {
+    locateStatus.textContent = "This browser has no Geolocation support.";
+    return;
+  }
+  if (!window.isSecureContext) {
+    locateStatus.innerHTML =
+      "⚠️ Location needs <b>HTTPS</b> (or localhost). On a plain-http LAN " +
+      "address the browser blocks GPS — deploy over HTTPS to use this.";
+    return;
+  }
+
+  locateStatus.textContent = "Locating… (allow the permission prompt)";
+  locateBtn.disabled = true;
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      locateBtn.disabled = false;
+      const { latitude, longitude, accuracy } = pos.coords;
+      userLocation = { lat: latitude, lng: longitude };
+
+      // Drop / move the "you are here" marker + accuracy circle.
+      if (userMarker) {
+        userMarker.setLatLng([latitude, longitude]);
+        accuracyCircle.setLatLng([latitude, longitude]).setRadius(accuracy);
+      } else {
+        userMarker = L.circleMarker([latitude, longitude], {
+          radius: 8,
+          color: "#2563eb",
+          fillColor: "#3b82f6",
+          fillOpacity: 1,
+          weight: 3,
+        })
+          .bindPopup("<b>You are here</b>")
+          .addTo(map);
+        accuracyCircle = L.circle([latitude, longitude], {
+          radius: accuracy,
+          color: "#3b82f6",
+          fillColor: "#3b82f6",
+          fillOpacity: 0.12,
+          weight: 1,
+        }).addTo(map);
+      }
+
+      map.flyTo([latitude, longitude], 16);
+      locateStatus.textContent = `Found you (±${Math.round(accuracy)} m). Tap a search result for directions.`;
+
+      // If a destination was already chosen, route to it now.
+      if (destination) drawRoute();
+    },
+    (err) => {
+      locateBtn.disabled = false;
+      const msgs = {
+        1: "Permission denied. Click the 🔒/📍 icon in the address bar → set " +
+          "Location to “Allow”, then tap the button again.",
+        2: "Position unavailable. Check that GPS / location services are on.",
+        3: "Timed out getting your location. Try again.",
+      };
+      locateStatus.textContent = msgs[err.code] || `Location error: ${err.message}`;
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+}
+
+// Called when a search result is clicked (see section 4).
+function selectDestination(lat, lng, label) {
+  destination = { lat, lng, label };
+  if (userLocation) {
+    drawRoute();
+  } else {
+    locateStatus.textContent =
+      `Destination set: ${label}. Tap “Use my location” to get directions.`;
+  }
+}
+
+// Call the OneMap Routing API and draw the path.
+async function drawRoute() {
+  if (!userLocation || !destination) return;
+
+  locateStatus.textContent = "Getting directions…";
+  try {
+    const params = new URLSearchParams({
+      start: `${userLocation.lat},${userLocation.lng}`,
+      end: `${destination.lat},${destination.lng}`,
+      routeType: routeTypeSelect.value, // walk | drive | cycle
+    });
+    const data = await onemapGet(`/public/routingsvc/route?${params}`, {
+      auth: true,
+    });
+
+    if (!data.route_geometry) {
+      throw new Error(data.status_message || "No route found.");
+    }
+
+    // Remove an old route before drawing the new one.
+    if (routeLayer) map.removeLayer(routeLayer);
+
+    const path = decodePolyline(data.route_geometry);
+    routeLayer = L.polyline(path, {
+      color: "#22c55e",
+      weight: 5,
+      opacity: 0.9,
+    }).addTo(map);
+    map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
+
+    // route_summary gives time (s) and distance (m).
+    const mins = Math.round((data.route_summary.total_time || 0) / 60);
+    const km = ((data.route_summary.total_distance || 0) / 1000).toFixed(2);
+    locateStatus.innerHTML =
+      `🧭 <b>${destination.label}</b><br>` +
+      `${routeTypeSelect.value} · ~${mins} min · ${km} km`;
+  } catch (err) {
+    locateStatus.textContent = `Routing error: ${err.message}`;
+  }
+}
+
+locateBtn.addEventListener("click", locateMe);
+// Re-route if the user switches Walk/Drive/Cycle after a route is shown.
+routeTypeSelect.addEventListener("change", () => {
+  if (userLocation && destination) drawRoute();
+});
+
+/* -------------------------------------------------------------------------
+   10. Friendly startup message in the console
    ------------------------------------------------------------------------- */
 
 console.log(
-  "%cOneMap Hackathon Starter ready.",
+  "%cOneMap Reference ready.",
   "color:#38bdf8;font-weight:bold;"
 );
 if (!TOKEN || TOKEN.startsWith("PASTE_")) {

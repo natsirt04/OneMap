@@ -2,8 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OneMap Hackathon Starter</title>
+  <!-- viewport-fit=cover lets the map fill edge-to-edge on notched phones -->
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>OneMap Reference</title>
+
+  <!-- ===== Mobile web-app / PWA meta (works on iOS + Android) ===== -->
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="OneMap" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/icon.svg" />
 
   <!--
     Leaflet is the lightweight, open-source JS mapping library that OneMap's
@@ -22,10 +36,14 @@
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
+  <!-- Floating toggle button — only visible on small (phone) screens.
+       Opens/closes the control panel, which becomes a bottom sheet on mobile. -->
+  <button id="panelToggle" type="button" aria-label="Toggle panel">☰ Menu</button>
+
   <!-- ===================== Sidebar / Control panel ===================== -->
   <aside id="sidebar">
     <header class="sidebar-header">
-      <h1>🇸🇬 OneMap Starter</h1>
+      <h1>🇸🇬 OneMap Reference</h1>
       <p class="subtitle">Singapore map data for hackathons</p>
     </header>
 
@@ -72,6 +90,25 @@
       </div>
     </section>
 
+    <!-- Phone GPS (browser Geolocation API) + OneMap Routing API -->
+    <section class="panel">
+      <label class="panel-label">My location &amp; routing</label>
+      <button id="locateBtn" type="button" class="full-btn">
+        📍 Use my location
+      </button>
+      <div class="search-row" style="margin-top:8px;">
+        <select id="routeTypeSelect" aria-label="Route type">
+          <option value="walk">🚶 Walk</option>
+          <option value="drive">🚗 Drive</option>
+          <option value="cycle">🚴 Cycle</option>
+        </select>
+      </div>
+      <div id="locateStatus" class="info-box" style="margin-top:8px;">
+        Tap “Use my location”, then tap a search result to get directions from
+        where you are.
+      </div>
+    </section>
+
     <!-- Reverse geocode result appears here when you click the map -->
     <section class="panel">
       <label class="panel-label">Click the map to reverse geocode</label>
@@ -109,5 +146,31 @@
 
   <!-- Our application logic -->
   <script src="js/app.js"></script>
+
+  <!-- Mobile control panel toggle (bottom sheet on phones) -->
+  <script>
+    (function () {
+      var toggle = document.getElementById("panelToggle");
+      toggle.addEventListener("click", function () {
+        document.body.classList.toggle("panel-open");
+        toggle.textContent = document.body.classList.contains("panel-open")
+          ? "✕ Close"
+          : "☰ Menu";
+      });
+    })();
+  </script>
+
+  <!-- Register the service worker so the app is installable ("Add to Home
+       Screen") and the shell works offline. Only runs over HTTPS or localhost;
+       it fails silently elsewhere (e.g. plain-http LAN), which is fine. -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js").catch(function () {
+          /* not installable in this context — app still works */
+        });
+      });
+    }
+  </script>
 </body>
 </html>

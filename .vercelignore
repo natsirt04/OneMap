@@ -1,0 +1,18 @@
+# Files NOT to upload when deploying with the Vercel CLI.
+#
+# NOTE: when a .vercelignore exists, Vercel uses IT (not .gitignore) to decide
+# what to upload. We deliberately do NOT list js/config.js here, so the CLI
+# (`vercel --prod`) uploads your local token file and the deployed site works.
+# Your token still stays OUT of GitHub because .gitignore still excludes it.
+#
+# ⚠️ A static site's JS is public, so anyone who opens the deployed URL can read
+# the token in the page source. Only deploy a SHORT-LIVED hackathon token and
+# regenerate it after the event. For production, use a serverless proxy instead.
+
+.git
+node_modules
+*.log
+.DS_Store
+Thumbs.db
+.vscode
+.idea

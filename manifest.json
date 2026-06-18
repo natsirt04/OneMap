@@ -1,0 +1,19 @@
+{
+  "name": "OneMap Reference",
+  "short_name": "OneMap",
+  "description": "Interactive Singapore map built on OneMap basemaps and APIs.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
