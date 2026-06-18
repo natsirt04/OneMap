@@ -117,14 +117,6 @@ https://www.onemap.gov.sg/maps/tiles/Original/{z}/{x}/{y}.png
 
 ---
 
-## 🧩 Where to go next
-
-See the main hackathon guide for **10 project-idea extensions**, more API
-examples (Planning Area, routing, population query), and a troubleshooting
-section.
-
----
-
 ## 📜 License & data attribution
 
 Map data © OneMap, Singapore Land Authority. Your use of OneMap is subject to
