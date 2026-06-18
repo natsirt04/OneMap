@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OneMap Hackathon Starter</title>
+
+  <!--
+    Leaflet is the lightweight, open-source JS mapping library that OneMap's
+    official documentation uses for its raster basemaps. We load it from a CDN
+    so there are NO build tools and NO npm install required.
+    Docs: https://www.onemap.gov.sg/apidocs/maps
+  -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+
+  <!-- Our own styles -->
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- ===================== Sidebar / Control panel ===================== -->
+  <aside id="sidebar">
+    <header class="sidebar-header">
+      <h1>🇸🇬 OneMap Starter</h1>
+      <p class="subtitle">Singapore map data for hackathons</p>
+    </header>
+
+    <!-- Search box: powered by the OneMap Search API -->
+    <section class="panel">
+      <label class="panel-label" for="searchInput">Search an address or building</label>
+      <div class="search-row">
+        <input
+          id="searchInput"
+          type="text"
+          placeholder="e.g. Marina Bay Sands"
+          autocomplete="off"
+        />
+        <button id="searchBtn" type="button">Search</button>
+      </div>
+      <ul id="searchResults" class="results"></ul>
+    </section>
+
+    <!-- Basemap switcher: Default / Grey / Night / Original -->
+    <section class="panel">
+      <label class="panel-label" for="basemapSelect">Basemap style</label>
+      <select id="basemapSelect">
+        <option value="Default">Default</option>
+        <option value="Grey">Grey</option>
+        <option value="Night">Night</option>
+        <option value="Original">Original</option>
+      </select>
+    </section>
+
+    <!-- Overlay a thematic layer from the Themes API (live government data) -->
+    <section class="panel">
+      <label class="panel-label" for="themeSelect">Thematic layer (live data)</label>
+      <select id="themeSelect">
+        <option value="">— none —</option>
+        <option value="libraries">Libraries</option>
+        <option value="moh_hospitals">Hospitals</option>
+        <option value="ssot_hawkercentres">Hawker Centres</option>
+        <option value="firestation">Fire Stations</option>
+        <option value="tourism">Tourist Attractions</option>
+        <option value="monuments">Monuments</option>
+      </select>
+      <div id="themeStatus" class="info-box" style="margin-top:8px;">
+        Pick a layer to plot it on the map.
+      </div>
+    </section>
+
+    <!-- Reverse geocode result appears here when you click the map -->
+    <section class="panel">
+      <label class="panel-label">Click the map to reverse geocode</label>
+      <div id="revgeoResult" class="info-box">
+        Click anywhere on the map to see the nearest address.
+      </div>
+    </section>
+
+    <footer class="sidebar-footer">
+      <small>
+        Data &copy; OneMap / Singapore Land Authority.
+        Built for the SHINE26 hackathon.
+      </small>
+    </footer>
+  </aside>
+
+  <!-- ===================== The map ===================== -->
+  <main>
+    <div id="map"></div>
+  </main>
+
+  <!-- Leaflet library (must load BEFORE our app.js) -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <!--
+    config.js holds your OneMap API token. It is git-ignored on purpose so you
+    never commit a secret. Copy config.example.js to config.js and paste your
+    token before running.
+  -->
+  <script src="js/config.js"></script>
+
+  <!-- Our application logic -->
+  <script src="js/app.js"></script>
+</body>
+</html>
