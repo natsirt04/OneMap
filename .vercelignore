@@ -1,13 +1,13 @@
 # Files NOT to upload when deploying with the Vercel CLI.
 #
-# NOTE: when a .vercelignore exists, Vercel uses IT (not .gitignore) to decide
-# what to upload. We deliberately do NOT list js/config.js here, so the CLI
-# (`vercel --prod`) uploads your local token file and the deployed site works.
-# Your token still stays OUT of GitHub because .gitignore still excludes it.
+# With the serverless token endpoint (api/onemap-token.js), credentials live in
+# Vercel Environment Variables (ONEMAP_EMAIL / ONEMAP_PASSWORD) — NOT in any
+# uploaded file. So, unlike the old static-only setup, we deliberately DO NOT
+# ship js/config.js or any .env file. Nothing secret ends up in the client
+# bundle or the deployment.
 #
-# ⚠️ A static site's JS is public, so anyone who opens the deployed URL can read
-# the token in the page source. Only deploy a SHORT-LIVED hackathon token and
-# regenerate it after the event. For production, use a serverless proxy instead.
+# If you are NOT using the serverless function and instead rely on a token in
+# js/config.js, remove the "js/config.js" line below so the CLI uploads it.
 
 .git
 node_modules
@@ -16,3 +16,9 @@ node_modules
 Thumbs.db
 .vscode
 .idea
+
+# Secrets — keep these out of the deployment
+js/config.js
+.env
+.env.local
+.env.*.local

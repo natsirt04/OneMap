@@ -1,5 +1,8 @@
-# Never commit your OneMap API token
+# Never commit your OneMap API token or account credentials
 js/config.js
+.env
+.env.local
+.env.*.local
 
 # OS / editor noise
 .DS_Store

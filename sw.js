@@ -11,25 +11,29 @@
    Bump CACHE_VERSION whenever you change the shell files to force an update.
    ========================================================================= */
 
-const CACHE_VERSION = "onemap-ref-v1";
+const CACHE_VERSION = "onemap-ref-v2";
 
-// Files that make up the static shell. Note: js/config.js is intentionally
-// listed so the app shell works offline, but it is git-ignored, so it only
-// exists locally / wherever you deploy it.
+// Files that make up the static shell. js/config.js is optional: it only
+// exists when you use the local token fallback, so we cache it best-effort
+// (allSettled) instead of failing the whole install when it is absent.
 const SHELL = [
   "./",
   "./index.html",
   "./css/styles.css",
+  "./js/token.js",
   "./js/app.js",
   "./js/config.js",
   "./manifest.json",
   "./assets/icon.svg",
 ];
 
-// Install: pre-cache the shell.
+// Install: pre-cache the shell. allSettled so a missing optional file (e.g.
+// config.js on a serverless deploy) doesn't abort the install.
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_VERSION).then((cache) => cache.addAll(SHELL))
+    caches
+      .open(CACHE_VERSION)
+      .then((cache) => Promise.allSettled(SHELL.map((url) => cache.add(url))))
   );
   self.skipWaiting();
 });
@@ -52,6 +56,11 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (event.request.method !== "GET" || url.origin !== self.location.origin) {
     return; // let the browser handle cross-origin (OneMap) requests normally
+  }
+
+  // Never cache the token endpoint — bearer tokens must always be live.
+  if (url.pathname.startsWith("/api/")) {
+    return; // network-only passthrough
   }
 
   event.respondWith(

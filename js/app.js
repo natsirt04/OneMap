@@ -27,10 +27,11 @@
 // Base URL for all OneMap REST APIs.
 const ONEMAP_API = "https://www.onemap.gov.sg/api";
 
-// The token is read from js/config.js (window.ONEMAP_CONFIG.token).
-// Some APIs (Search) are public; others (Reverse Geocode, Themes, Planning
-// Area) require this token in the Authorization header.
-const TOKEN = (window.ONEMAP_CONFIG && window.ONEMAP_CONFIG.token) || "";
+// Tokens are obtained through OneMapAuth (js/token.js): it fetches a fresh
+// token from the /api/onemap-token serverless endpoint (recommended) and
+// falls back to a token pasted into js/config.js for plain static hosting.
+// Some APIs (Search) are public; others (Reverse Geocode, Themes, Routing,
+// Planning Area) require a token in the Authorization header.
 
 // Singapore's geographic extent (WGS84 lat/lng). Used to stop users panning
 // off into the ocean and to cap zoom for performance.
@@ -104,18 +105,36 @@ marker.on("dragend", () => {
    ------------------------------------------------------------------------- */
 
 async function onemapGet(path, { auth = false } = {}) {
-  const headers = {};
-  if (auth) {
-    if (!TOKEN || TOKEN.startsWith("PASTE_")) {
-      throw new Error(
-        "This OneMap API needs a token. Add it to js/config.js first."
-      );
+  // One attempt at the request. `forceToken` bypasses the token cache so we
+  // can retry with a freshly minted token after a 401/403.
+  async function attempt(forceToken) {
+    const headers = {};
+    if (auth) {
+      let token;
+      try {
+        token = await window.OneMapAuth.getToken({ force: forceToken });
+      } catch (err) {
+        throw new Error(
+          "This OneMap API needs a token, and none could be obtained. " +
+            "Configure ONEMAP_EMAIL/ONEMAP_PASSWORD (serverless) or paste a " +
+            "token into js/config.js. Details: " +
+            err.message
+        );
+      }
+      // OneMap expects the raw token in the Authorization header.
+      headers["Authorization"] = token;
     }
-    // OneMap expects the raw token in the Authorization header.
-    headers["Authorization"] = TOKEN;
+    return fetch(`${ONEMAP_API}${path}`, { headers });
   }
 
-  const res = await fetch(`${ONEMAP_API}${path}`, { headers });
+  let res = await attempt(false);
+
+  // A token can expire mid-session. On the first auth failure, renew the token
+  // once and retry transparently before giving up.
+  if (auth && (res.status === 401 || res.status === 403)) {
+    res = await attempt(true);
+  }
+
   if (!res.ok) {
     throw new Error(`OneMap request failed: ${res.status} ${res.statusText}`);
   }
@@ -512,9 +531,16 @@ console.log(
   "%cOneMap Reference ready.",
   "color:#38bdf8;font-weight:bold;"
 );
-if (!TOKEN || TOKEN.startsWith("PASTE_")) {
-  console.warn(
-    "No OneMap token set. Search works, but Reverse Geocode and Themes need a " +
-      "token in js/config.js."
+// Probe token availability so missing config is obvious in the console, but
+// don't block startup — Search and basemaps work without a token.
+window.OneMapAuth.getToken()
+  .then(() => console.log("OneMap token acquired — all APIs available."))
+  .catch((err) =>
+    console.warn(
+      "No OneMap token available. Search and basemaps still work, but " +
+        "Reverse Geocode, Themes, and Routing need one. " +
+        "Set ONEMAP_EMAIL/ONEMAP_PASSWORD (serverless) or js/config.js. " +
+        "Details: " +
+        err.message
+    )
   );
-}
