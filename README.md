@@ -14,10 +14,6 @@ Open `index.html` in a browser and you've got:
 - **Themes API**: overlay live data like libraries, hospitals, and hawker centres
 - **My location**: reads your phone's GPS through the browser Geolocation API
 - **Routing API**: walk, drive, or cycle directions from where you are to a search result
-
-It was built for the SHINE26 hackathon, so the code is meant to be read and
-pulled apart while you build on it. Plain HTML, CSS, and JavaScript.
-
 ---
 
 ## Project structure
@@ -100,7 +96,7 @@ Three steps to a running map on your own machine.
 
 ## Put it on your phone (Vercel)
 
-Testing a map on a phone is awkward: you can't just open the file, and phones
+Testing a map on a phone is tricky: you can't just open the file, and phones
 won't hand over GPS unless the page is served over HTTPS. Deploying to Vercel
 fixes both. The free Hobby plan takes about a minute and gives you HTTPS for
 free, so the URL opens on any phone, not only one sitting on your Wi-Fi.
@@ -108,11 +104,11 @@ free, so the URL opens on any phone, not only one sitting on your Wi-Fi.
 ### Deploy it
 
 ```bash
-npm i -g vercel     # one time
-cd onemap-reference
+npm i -g vercel    
+cd OneMap
 vercel login
 
-# Set your OneMap credentials as encrypted env vars (one time).
+# Set your OneMap credentials as encrypted env vars (To be done through online first).
 # Paste the value when prompted; pick "Production" (and Preview/Development).
 vercel env add ONEMAP_EMAIL
 vercel env add ONEMAP_PASSWORD
@@ -173,8 +169,7 @@ vercel --prod
 
 A static deploy is usually live within a few seconds, and the aliased URL updates
 in place, so any link you already shared keeps working. Refresh the phone to see
-the new build. If it looks stuck on the old one, that's the service worker holding
-the cached shell. Pull to refresh, or close and reopen the tab.
+the new build. If it looks stuck on the old one, pull to refresh, or close and reopen the tab.
 
 ---
 
@@ -355,7 +350,7 @@ repeated auth failures:
 
 ## Using your location for directions
 
-Quick myth-bust first: there's no OneMap API that "connects to your phone." Your
+To note: there's no OneMap API that "connects to your phone." Your
 location comes from the browser's
 [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API),
 a W3C standard every mobile browser already ships. The app reads your GPS with
