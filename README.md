@@ -76,9 +76,13 @@ Three steps to a running map on your own machine.
 
    ```bash
    npm i -g vercel        # one time
+   vercel env add ONEMAP_EMAIL development
+   vercel env add ONEMAP_PASSWORD development
    vercel dev             # serves http://localhost:3000
    # or: npm run dev:api  (binds port 5500)
    ```
+
+   > To obtain the above environment variables, see the GPS & Mapping modules guide to setup
 
    If you're using the `js/config.js` fallback instead, any plain static server
    works. The serverless function just won't run:
