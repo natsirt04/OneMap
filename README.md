@@ -76,6 +76,7 @@ Three steps to a running map on your own machine.
 
    ```bash
    npm i -g vercel        # one time
+   vercel link            # connects your local project directory to an existing Vercel Project
    vercel env add ONEMAP_EMAIL development
    vercel env add ONEMAP_PASSWORD development
    vercel dev             # serves http://localhost:3000
